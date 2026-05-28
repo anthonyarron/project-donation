@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Support Us | Prestige Worshippers Ministry</title>
+  <style>
+    /* 🎨 YOUR CHURCH COLORS & THEME */
+    :root {
+      --navy: #0B2A47;
+      --red: #E61E23;
+      --black: #000000;
+      --white: #FFFFFF;
+      --light-gray: #f4f6f8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: var(--light-gray);
+      color: var(--black);
+      line-height: 1.6;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 500px;
+      margin: 0 auto;
+      background: var(--white);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 6px 20px rgba(11, 42, 71, 0.15);
+    }
+
+    /* HEADER */
+    .header {
+      background: var(--navy);
+      color: var(--white);
+      text-align: center;
+      padding: 30px 20px;
+    }
+    .header h1 { font-size: 1.5rem; margin-bottom: 8px; letter-spacing: 0.5px; }
+    .theme { font-size: 0.95rem; opacity: 0.9; font-style: italic; color: var(--red); }
+
+    /* FORM */
+    .form-section { padding: 25px; }
+    .form-group { margin-bottom: 18px; }
+    label { display: block; margin-bottom: 6px; font-weight: 600; color: var(--navy); font-size: 0.95rem; }
+    input, select {
+      width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px;
+      font-size: 1rem; transition: border-color 0.2s;
+    }
+    input:focus, select:focus { border-color: var(--navy); outline: none; }
+
+    .amount-presets {
+      display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;
+    }
+    .preset {
+      flex: 1; min-width: 80px; padding: 10px; border: 2px solid var(--navy);
+      background: transparent; color: var(--navy); border-radius: 8px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+    }
+    .preset:hover, .preset.active { background: var(--navy); color: var(--white); }
+
+    .pay-btn {
+      width: 100%; padding: 14px; background: var(--red); color: var(--white);
+      border: none; border-radius: 8px; font-size: 1.1rem; font-weight: 700;
+      cursor: pointer; transition: background 0.2s; margin-top: 10px;
+    }
+    .pay-btn:hover { background: #c4191d; }
+    .pay-btn:disabled { background: #999; cursor: not-allowed; }
+
+    .mtn-airtel-note {
+      text-align: center; margin-top: 15px; font-size: 0.85rem; color: #666;
+      background: #fafafa; padding: 10px; border-radius: 6px;
+    }
+
+    /* STATUS MESSAGE */
+    #status { display: none; text-align: center; padding: 12px; border-radius: 8px; margin-top: 15px; font-weight: 500; }
+    #status.success { background: #d1fae5; color: #065f46; display: block; }
+    #status.error { background: #fee2e2; color: #991b1b; display: block; }
+    #status.loading { background: #e0f2fe; color: #075985; display: block; }
+
+    /* FOOTER */
+    .footer {
+      text-align: center; padding: 15px; font-size: 0.8rem; color: #666;
+      border-top: 1px solid #eee; background: var(--light-gray);
+    }
+
+    @media (max-width: 480px) {
+      .container { border-radius: 0; box-shadow: none; }
+      body { padding: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>Prestige Worshippers Ministry</h1>
+    <div class="theme">❤️ Love • 🤝 Care • ✨ Transform</div>
+  </div>
+
+  <div class="form-section">
+    <form id="donationForm">
+      <div class="form-group">
+        <label for="donorName">Your Name</label>
+        <input type="text" id="donorName" placeholder="e.g., John Mukasa" required>
+      </div>
+
+      <div class="form-group">
+        <label for="donorPhone">Phone Number (for MoMo prompt)</label>
+        <input type="tel" id="donorPhone" placeholder="e.g., 0771234567" required>
+      </div>
+
+      <div class="form-group">
+        <label>Donation Amount (UGX)</label>
+        <div class="amount-presets">
+          <button type="button" class="preset" data-amount="10000">10K</button>
+          <button type="button" class="preset" data-amount="25000">25K</button>
+          <button type="button" class="preset" data-amount="50000">50K</button>
+          <button type="button" class="preset" data-amount="100000">100K</button>
+        </div>
+        <input type="number" id="amount" placeholder="Or enter custom amount" min="1000" required>
+      </div>
+
+      <div class="form-group">
+        <label>Payment Method</label>
+        <select id="paymentMethod">
+          <option value="mtn">MTN Mobile Money</option>
+          <option value="airtel">Airtel Money</option>
+        </select>
+      </div>
+
+      <button type="submit" class="pay-btn" id="payBtn">Proceed to Pay</button>
+      <div id="status"></div>
+    </form>
+
+    <div class="mtn-airtel-note">
+      🔒 Secure payment via Pesapal. You'll receive a prompt on your phone to approve.
+    </div>
+  </div>
+
+  <div class="footer">
+    © Prestige Worshippers Ministry • Uganda
+  </div>
+</div>
+
+<script>
+  // 🟢 SIMPLE FRONTEND LOGIC (Phase 2)
+  const form = document.getElementById('donationForm');
+  const payBtn = document.getElementById('payBtn');
+  const statusEl = document.getElementById('status');
+  const amountInput = document.getElementById('amount');
+  const presets = document.querySelectorAll('.preset');
+
+  // Handle preset buttons
+  presets.forEach(btn => {
+    btn.addEventListener('click', () => {
+      presets.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      amountInput.value = btn.dataset.amount;
+    });
+  });
+
+  // Form submission
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const name = document.getElementById('donorName').value.trim();
+    const phone = document.getElementById('donorPhone').value.trim().replace(/\D/g, ''); // Remove spaces/symbols
+    const amount = parseInt(amountInput.value);
+    const method = document.getElementById('paymentMethod').value;
+
+    // Basic validation
+    if (!name || phone.length < 10 || isNaN(amount) || amount < 1000) {
+      showStatus('Please fill all fields correctly. Minimum donation: UGX 1,000', 'error');
+      return;
+    }
+
+    // Format phone to Ugandan format (remove leading 0 if present, ensure 256 prefix)
+    const formattedPhone = phone.startsWith('0') ? '256' + phone.slice(1) : (phone.startsWith('256') ? phone : '256' + phone);
+
+    showStatus('🔄 Preparing secure payment...', 'loading');
+    payBtn.disabled = true;
+    payBtn.textContent = 'Processing...';
+
+    // ⏸️ PHASE 2 PLACEHOLDER: This is where we'll connect to your serverless function later
+    // For now, we simulate success so you can see the UI flow
+    setTimeout(() => {
+      console.log('Donation Ready:', { name, phone: formattedPhone, amount, method });
+      showStatus('✅ Payment form validated! Ready for Phase 3 connection.', 'success');
+      payBtn.disabled = false;
+      payBtn.textContent = 'Proceed to Pay';
+    }, 1500);
+  });
+
+  function showStatus(msg, type) {
+    statusEl.textContent = msg;
+    statusEl.className = type;
+  }
+</script>
+
+</body>
+</html>
