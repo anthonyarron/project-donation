@@ -1,4 +1,4 @@
-const ENVIRONMENT = 'LIVE'; // SANDBOX or LIVE
+const ENVIRONMENT = 'SANDBOX'; // SANDBOX or LIVE
 
 const API_BASE = ENVIRONMENT === 'LIVE' 
   ? 'https://pay.pesapal.com/pesapalv3' 
