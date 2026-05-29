@@ -1,5 +1,6 @@
 {
-  "name": "project-donation",
+  "name": "prestige-donation",
   "version": "1.0.0",
+  "type": "module",
   "dependencies": {}
 }
