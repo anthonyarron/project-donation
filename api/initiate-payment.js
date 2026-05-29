@@ -1,6 +1,4 @@
-// api/initiate-payment.js
 export default async function handler(req, res) {
-  // 🔒 Allow your frontend to talk to this function
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -8,24 +6,35 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { name, phone, amount } = req.body;
+  const { name, phone, amount } = req.body || {};
   if (!name || !phone || !amount) {
     return res.status(400).json({ error: 'Missing name, phone, or amount' });
   }
 
-  // 🤫 These will come from Vercel's secure environment (we set them in Step 4)
   const PESAPAL_KEY = process.env.PESAPAL_CONSUMER_KEY;
   const PESAPAL_SECRET = process.env.PESAPAL_CONSUMER_SECRET;
 
+  if (!PESAPAL_KEY || !PESAPAL_SECRET) {
+    console.error('❌ Missing Pesapal environment variables');
+    return res.status(500).json({ error: 'Server configuration error' });
+  }
+
   try {
-    // 1️⃣ GET AUTH TOKEN
+    // 1️ GET AUTH TOKEN
     const tokenRes = await fetch('https://cybqa.pesapal.com/pesapalv3/api/Auth/RequestToken', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ consumer_key: PESAPAL_KEY, consumer_secret: PESAPAL_SECRET })
     });
+    
+    if (!tokenRes.ok) {
+      const errText = await tokenRes.text();
+      console.error('Token fetch failed:', tokenRes.status, errText);
+      throw new Error(`Pesapal auth failed: ${tokenRes.status}`);
+    }
+
     const tokenData = await tokenRes.json();
-    if (!tokenData.token) throw new Error('Failed to authenticate with Pesapal');
+    if (!tokenData.token) throw new Error('No token returned from Pesapal');
 
     // 2️⃣ CREATE PAYMENT ORDER
     const orderData = {
@@ -33,8 +42,8 @@ export default async function handler(req, res) {
       currency: 'UGX',
       amount: parseFloat(amount),
       description: `Donation - Prestige Worshippers Ministry`,
-      callback_url: ''https://project-donation-xyz.vercel.app/success',, // We'll update this after deployment
-      notification_url: 'https://your-site.vercel.app/api/notify',
+      callback_url: 'https://project-donation-rho.vercel.app//success', //  Replace with your actual Vercel URL
+      notification_url: 'https://project-donation-rho.vercel.app//api/notify',
       billing_address: {
         email_address: 'donor@pesapal.com',
         phone_number: phone,
@@ -54,6 +63,13 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify(orderData)
     });
+
+    if (!orderRes.ok) {
+      const errText = await orderRes.text();
+      console.error('Order submit failed:', orderRes.status, errText);
+      throw new Error(`Pesapal order failed: ${orderRes.status}`);
+    }
+
     const orderResult = await orderRes.json();
 
     if (orderResult.redirect_url) {
@@ -63,10 +79,10 @@ export default async function handler(req, res) {
         tracking_id: orderResult.order_tracking_id
       });
     } else {
-      throw new Error(orderResult.message || 'Payment failed to initialize');
+      throw new Error(orderResult.message || 'No redirect URL returned');
     }
   } catch (err) {
-    console.error('Pesapal Error:', err);
+    console.error('💥 Function crashed:', err.message);
     return res.status(500).json({ error: 'Payment setup failed', details: err.message });
   }
 }
