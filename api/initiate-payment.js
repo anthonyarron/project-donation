@@ -1,3 +1,10 @@
+// 🔧 CONFIGURATION: Change this to 'LIVE' when you are ready to accept real money
+const ENVIRONMENT = 'SANDBOX'; // Options: 'SANDBOX' or 'LIVE'
+
+const API_BASE = ENVIRONMENT === 'LIVE' 
+  ? 'https://pay.pesapal.com/pesapalv3' 
+  : 'https://cybqa.pesapal.com/pesapalv3';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -13,38 +20,39 @@ export default async function handler(req, res) {
 
   const PESAPAL_KEY = process.env.PESAPAL_CONSUMER_KEY;
   const PESAPAL_SECRET = process.env.PESAPAL_CONSUMER_SECRET;
-console.log('🔑 PESAPAL_KEY exists:', !!PESAPAL_KEY);
-console.log('🔑 PESAPAL_SECRET exists:', !!PESAPAL_SECRET);
 
-if (!PESAPAL_KEY || !PESAPAL_SECRET) {
-    console.error('❌ Missing Pesapal environment variables');
-    return res.status(500).json({ error: 'Server configuration error' });
+  if (!PESAPAL_KEY || !PESAPAL_SECRET) {
+    console.error('❌ Missing keys in Vercel');
+    return res.status(500).json({ error: 'Server config error' });
   }
 
   try {
-    // 1️ GET AUTH TOKEN
-    const tokenRes = await fetch('https://cybqa.pesapal.com/pesapalv3/api/Auth/RequestToken', {
+    // 1️⃣ GET TOKEN
+    const tokenRes = await fetch(`${API_BASE}/api/Auth/RequestToken`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
       body: JSON.stringify({ consumer_key: PESAPAL_KEY, consumer_secret: PESAPAL_SECRET })
     });
-    
+
+    // 🔍 DEBUG: See exactly what Pesapal replied
+    const tokenData = await tokenRes.json();
+    console.log('👉 Pesapal Auth Response:', JSON.stringify(tokenData));
+
     if (!tokenRes.ok) {
-      const errText = await tokenRes.text();
-      console.error('Token fetch failed:', tokenRes.status, errText);
-      throw new Error(`Pesapal auth failed: ${tokenRes.status}`);
+       throw new Error(`Auth Failed (${tokenRes.status}): ${JSON.stringify(tokenData)}`);
+    }
+    if (!tokenData.token) {
+      // This is where you were stuck. Now we'll see the actual message.
+      throw new Error(`No token received. Pesapal said: ${JSON.stringify(tokenData)}`);
     }
 
-    const tokenData = await tokenRes.json();
-    if (!tokenData.token) throw new Error('No token returned from Pesapal');
-
-    // 2️⃣ CREATE PAYMENT ORDER
+    // 2️⃣ SUBMIT ORDER
     const orderData = {
       id: `CHURCH_${Date.now()}`,
       currency: 'UGX',
       amount: parseFloat(amount),
       description: `Donation - Prestige Worshippers Ministry`,
-      callback_url: 'https://project-donation-rho.vercel.app//success', //  Replace with your actual Vercel URL
+      callback_url: 'https://project-donation-rho.vercel.app//success', // Update this
       notification_url: 'https://project-donation-rho.vercel.app//api/notify',
       billing_address: {
         email_address: 'donor@pesapal.com',
@@ -56,7 +64,7 @@ if (!PESAPAL_KEY || !PESAPAL_SECRET) {
       }
     };
 
-    const orderRes = await fetch('https://cybqa.pesapal.com/pesapalv3/api/Transactions/SubmitOrderRequest', {
+    const orderRes = await fetch(`${API_BASE}/api/Transactions/SubmitOrderRequest`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${tokenData.token}`,
@@ -66,25 +74,20 @@ if (!PESAPAL_KEY || !PESAPAL_SECRET) {
       body: JSON.stringify(orderData)
     });
 
-    if (!orderRes.ok) {
-      const errText = await orderRes.text();
-      console.error('Order submit failed:', orderRes.status, errText);
-      throw new Error(`Pesapal order failed: ${orderRes.status}`);
-    }
-
     const orderResult = await orderRes.json();
+    console.log(' Pesapal Order Response:', JSON.stringify(orderResult));
 
-    if (orderResult.redirect_url) {
-      return res.status(200).json({
-        success: true,
-        redirect_url: orderResult.redirect_url,
-        tracking_id: orderResult.order_tracking_id
-      });
-    } else {
-      throw new Error(orderResult.message || 'No redirect URL returned');
-    }
+    if (!orderRes.ok) throw new Error(`Order Failed: ${JSON.stringify(orderResult)}`);
+    if (!orderResult.redirect_url) throw new Error(`No URL: ${JSON.stringify(orderResult)}`);
+
+    return res.status(200).json({
+      success: true,
+      redirect_url: orderResult.redirect_url,
+      tracking_id: orderResult.order_tracking_id
+    });
+
   } catch (err) {
-    console.error('💥 Function crashed:', err.message);
-    return res.status(500).json({ error: 'Payment setup failed', details: err.message });
+    console.error('💥 Crash:', err.message);
+    return res.status(500).json({ error: 'Payment failed', details: err.message });
   }
 }
