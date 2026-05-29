@@ -1,5 +1,5 @@
 // 🔧 CONFIGURATION: Change this to 'LIVE' when you are ready to accept real money
-const ENVIRONMENT = 'SANDBOX'; // Options: 'SANDBOX' or 'LIVE'
+const ENVIRONMENT = 'LIVE'; // Options: 'SANDBOX' or 'LIVE'
 
 const API_BASE = ENVIRONMENT === 'LIVE' 
   ? 'https://pay.pesapal.com/pesapalv3' 
