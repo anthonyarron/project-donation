@@ -147,14 +147,12 @@
 </div>
 
 <script>
-  // 🟢 SIMPLE FRONTEND LOGIC (Phase 2)
   const form = document.getElementById('donationForm');
   const payBtn = document.getElementById('payBtn');
   const statusEl = document.getElementById('status');
   const amountInput = document.getElementById('amount');
   const presets = document.querySelectorAll('.preset');
 
-  // Handle preset buttons
   presets.forEach(btn => {
     btn.addEventListener('click', () => {
       presets.forEach(b => b.classList.remove('active'));
@@ -163,41 +161,56 @@
     });
   });
 
-  // Form submission
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     
     const name = document.getElementById('donorName').value.trim();
-    const phone = document.getElementById('donorPhone').value.trim().replace(/\D/g, ''); // Remove spaces/symbols
+    const phone = document.getElementById('donorPhone').value.trim().replace(/\D/g, '');
     const amount = parseInt(amountInput.value);
-    const method = document.getElementById('paymentMethod').value;
 
-    // Basic validation
     if (!name || phone.length < 10 || isNaN(amount) || amount < 1000) {
-      showStatus('Please fill all fields correctly. Minimum donation: UGX 1,000', 'error');
+      showStatus('Please fill all fields correctly. Minimum: UGX 1,000', 'error');
       return;
     }
 
-    // Format phone to Ugandan format (remove leading 0 if present, ensure 256 prefix)
     const formattedPhone = phone.startsWith('0') ? '256' + phone.slice(1) : (phone.startsWith('256') ? phone : '256' + phone);
 
-    showStatus('🔄 Preparing secure payment...', 'loading');
+    showStatus('🔒 Connecting to secure payment gateway...', 'loading');
     payBtn.disabled = true;
-    payBtn.textContent = 'Processing...';
+    payBtn.textContent = 'Initializing...';
 
-    // ⏸️ PHASE 2 PLACEHOLDER: This is where we'll connect to your serverless function later
-    // For now, we simulate success so you can see the UI flow
-    setTimeout(() => {
-      console.log('Donation Ready:', { name, phone: formattedPhone, amount, method });
-      showStatus('✅ Payment form validated! Ready for Phase 3 connection.', 'success');
-      payBtn.disabled = false;
-      payBtn.textContent = 'Proceed to Pay';
-    }, 1500);
+    try {
+      const res = await fetch('/api/initiate-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone: formattedPhone, amount })
+      });
+
+      const data = await res.json();
+
+      if (data.redirect_url) {
+        showStatus('✅ Redirecting to MTN/Airtel MoMo...', 'success');
+        setTimeout(() => {
+          window.location.href = data.redirect_url;
+        }, 800);
+      } else {
+        showStatus('❌ ' + (data.error || 'Payment setup failed'), 'error');
+        resetBtn();
+      }
+    } catch (err) {
+      showStatus('❌ Network error. Please check your internet.', 'error');
+      resetBtn();
+    }
   });
 
   function showStatus(msg, type) {
     statusEl.textContent = msg;
     statusEl.className = type;
+  }
+
+  function resetBtn() {
+    payBtn.disabled = false;
+    payBtn.textContent = 'Proceed to Pay';
   }
 </script>
 
