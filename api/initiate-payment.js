@@ -33,7 +33,7 @@ export default async function handler(req, res) {
       currency: 'UGX',
       amount: parseFloat(amount),
       description: `Donation - Prestige Worshippers Ministry`,
-      callback_url: 'https://your-site.vercel.app/success', // We'll update this after deployment
+      callback_url: ''https://project-donation-xyz.vercel.app/success',, // We'll update this after deployment
       notification_url: 'https://your-site.vercel.app/api/notify',
       billing_address: {
         email_address: 'donor@pesapal.com',
