@@ -13,8 +13,10 @@ export default async function handler(req, res) {
 
   const PESAPAL_KEY = process.env.PESAPAL_CONSUMER_KEY;
   const PESAPAL_SECRET = process.env.PESAPAL_CONSUMER_SECRET;
+console.log('🔑 PESAPAL_KEY exists:', !!PESAPAL_KEY);
+console.log('🔑 PESAPAL_SECRET exists:', !!PESAPAL_SECRET);
 
-  if (!PESAPAL_KEY || !PESAPAL_SECRET) {
+if (!PESAPAL_KEY || !PESAPAL_SECRET) {
     console.error('❌ Missing Pesapal environment variables');
     return res.status(500).json({ error: 'Server configuration error' });
   }
